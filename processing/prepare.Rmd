@@ -1,0 +1,323 @@
+---
+title: "analisis_indicadores"
+author: "Anais Herrera Leighton"
+date: "20-04-2021"
+output: html_document
+---
+
+```{r}
+pacman::p_load(ggplot2,
+               hrbrthemes,
+               sjPlot,
+               sjlabelled,
+               lavaan,
+               haven,
+               dplyr)
+```
+
+```{r}
+iccs0 <- read_dta("../input/data-original/iccs_simce.dta")
+iccs2016 = iccs0 %>% 
+  dplyr::select("Ig_etn1"=IS3G25A, #igualdad grupo étnico
+                "Ig_etn2"=IS3G25B, 
+                "Ig_etn3"=IS3G25C, 
+                "Ig_etn4"=IS3G25D, 
+                "Ig_etn5"=IS3G25E) %>%
+  as.data.frame()
+
+paces_apod0 <- haven::read_dta(file =url("https://github.com/formacionciudadana/data-paces/blob/main/docs/paces/data/base_apoderadosv2.dta?raw=true"))
+paces_apod = paces_apod0 %>% 
+  dplyr::select("Igualdad1" = P5A, #igualdad de género
+    "Igualdad2" = P5B,
+    "Igualdad3" = P5C,
+    "Igualdad4" = P5D,
+    "Igualdad5" = P5E,
+    "Igualdad6" = P5F,
+    "Igualdad7" = P5G,
+    "Igualdad8" = P5H,
+    "Igualdad9" = P5I,
+    "Ig_inm1" = P6A, #igualdad con inmigrantes
+    "Ig_inm2" = P6B,
+    "Ig_inm3" = P6C,
+    "Ig_inm4" = P6D,
+    "Ig_inm5" = P6E,
+    "Ig_inm6" = P6F,
+    "Ig_inm7" = P6G,
+    "Ig_inm8" = P6H,
+    "aut_pol1" = P31A, #autoeficacia política
+    "aut_pol2" = P31B,
+    "aut_pol3" = P31C,
+    "aut_pol4" = P31D,
+    "aut_pol5" = P31E,
+    "aut_pol6" = P31F,
+    "autorit1" = P8A, #creencias autoritarias
+    "autorit2" = P8B,
+    "autorit3" = P8C,
+    "autorit4" = P8D,
+    "autorit5" = P8E,
+    "autorit6" = P8F,
+    "autorit7" = P8G,
+    "autorit8" = P8H,
+    "autorit9" = P8I,
+    pond_apoderado_reg_dep_tens) %>%
+  as.data.frame()
+
+paces_est0 <- haven::read_dta(file = url("https://github.com/formacionciudadana/data-paces/blob/main/docs/paces/data/base_estudiantesv2.dta?raw=true"))
+paces_est = paces_est0 %>% 
+  dplyr::select("Igualdad1" = P18A, #igualdad de género
+    "Igualdad2" = P18B, 
+    "Igualdad3" = P18C,
+    "Igualdad4" = P18D,
+    "Igualdad5" = P18E,
+    "Igualdad6" = P18F,
+    "Igualdad7" = P18G,
+    "Igualdad8" = P18H,
+    "Igualdad9" = P18I,
+    "Ig_inm1" = P19A, #igualdad con inmigrantes
+    "Ig_inm2" = P19B,
+    "Ig_inm3" = P19C,
+    "Ig_inm4" = P19D,
+    "Ig_inm5" = P19E,
+    "Ig_inm6" = P19F,
+    "Ig_inm7" = P19G,
+    "Ig_inm8" = P19H,
+    "aut_pol1" = P47A, #autoeficacia política
+    "aut_pol2" = P47B,
+    "aut_pol3" = P47C,
+    "aut_pol4" = P47D,
+    "aut_pol5" = P47E,
+    "aut_pol6" = P47F,
+    "autorit1" = P21A, #creencias autoritarias
+    "autorit2" = P21B,
+    "autorit3" = P21C,
+    "autorit4" = P21D,
+    "autorit5" = P21E,
+    "autorit6" = P21F,
+    "autorit7" = P21G,
+    "autorit8" = P21H,
+    "autorit9" = P21I,
+    "conf1" = P22A, #confianza en instituciones
+    "conf2" = P22B,
+    "conf3" = P22C,
+    "conf4" = P22D,
+    "conf5" = P22E,
+    "conf6" = P22F,
+    "corrup1" = P23A, #corrupción en instituciones
+    "corrup2" = P23B,
+    "corrup3" = P23C,
+    "corrup4" = P23D,
+    "corrup5" = P23E,
+    pond_estudiante_reg_dep_tens) %>%
+  as.data.frame()
+```
+
+#Sentido de autoeficacia política 
+## PACES: estudiantes
+```{r}
+paces_est$aut_pol1 <- set_label(x = paces_est$aut_pol1, label = "Sé más de política que la mayoría de mis compañeros")
+paces_est$aut_pol1 <- set_na(paces_est$aut_pol1, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$aut_pol2 <- set_label(x = paces_est$aut_pol2, label = "Cuando se habla de temas o problemas políticos, generalmente tengo algo que decir")
+paces_est$aut_pol2 <- set_na(paces_est$aut_pol2, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$aut_pol3 <- set_label(x = paces_est$aut_pol3, label = "Logro entender fácilmente la mayoría de los temas políticos")
+paces_est$aut_pol3 <- set_na(paces_est$aut_pol3, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$aut_pol4 <- set_label(x = paces_est$aut_pol4, label = "Tengo opiniones políticas que vale la pena escuchar")
+paces_est$aut_pol4 <- set_na(paces_est$aut_pol4, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$aut_pol5 <- set_label(x = paces_est$aut_pol5, label = "Cuando sea adulto(a) podré participar en política")
+paces_est$aut_pol5 <- set_na(paces_est$aut_pol5, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$aut_pol6 <- set_label(x = paces_est$aut_pol6, label = "Comprendo bien las problemáticas políticas de nuestro país")
+paces_est$aut_pol6 <- set_na(paces_est$aut_pol6, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+```
+
+## PACES: apoderados
+```{r}
+paces_apod$aut_pol1 <- set_label(x = paces_apod$aut_pol1, label = "Sé más de política que la mayoría de mis conocidos")
+paces_apod$aut_pol1 <- set_na(paces_apod$aut_pol1, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$aut_pol2 <- set_label(x = paces_apod$aut_pol2, label = "Cuando se habla de temas o problemas políticos, generalmente tengo algo que decir")
+paces_apod$aut_pol2 <- set_na(paces_apod$aut_pol2, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$aut_pol3 <- set_label(x = paces_apod$aut_pol3, label = "Logro entender fácilmente la mayoría de los temas políticos")
+paces_apod$aut_pol3 <- set_na(paces_apod$aut_pol3, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$aut_pol4 <- set_label(x = paces_apod$aut_pol4, label = "Tengo opiniones políticas que vale la pena escuchar")
+paces_apod$aut_pol4 <- set_na(paces_apod$aut_pol4, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$aut_pol5 <- set_label(x = paces_apod$aut_pol5, label = "Participo en política")
+paces_apod$aut_pol5 <- set_na(paces_apod$aut_pol5, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$aut_pol6 <- set_label(x = paces_apod$aut_pol6, label = "Comprendo bien las problemáticas políticas de nuestro país")
+paces_apod$aut_pol6 <- set_na(paces_apod$aut_pol6, na = 9, drop.levels = TRUE, as.tag = FALSE)
+```
+
+#Actitudes hacia la igualdad con grupos étnicos
+```{r}
+iccs2016$Ig_etn1 <- set_label(x = iccs2016$Ig_etn1, label = "Todos los grupos étnicos y raciales deberían tener la misma oportunidad de acceder a una buena educación")
+iccs2016$Ig_etn2 <- set_label(x = iccs2016$Ig_etn2, label = "Todos los grupos étnicos y raciales deberían tener la misma oportunidad de conseguir buenos trabajos")
+iccs2016$Ig_etn3 <- set_label(x = iccs2016$Ig_etn3, label = "Las escuelas deberían enseñar a los estudiantes a respetar a los miembros de todos los grupos étnicos y raciales")
+iccs2016$Ig_etn4 <- set_label(x = iccs2016$Ig_etn4, label = "Debería promoverse que miembros de todos los grupos étnicos y raciales se presentaran a las elecciones para cargos políticos")
+iccs2016$Ig_etn5 <- set_label(x = iccs2016$Ig_etn5, label = "Los miembros de todos los grupos étnicos y raciales deberían tener los mismos derechos y responsabilidades")
+```
+
+#Actitudes hacia la igualdad de género
+## PACES: estudiantes
+```{r}
+paces_est$Igualdad1 <- set_label(x = paces_est$Igualdad1, label = "Los hombres y las mujeres deberían tener las mismas oportunidades de participar en el gobierno")
+paces_est$Igualdad1 <- set_na(paces_est$Igualdad1, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad2 <- set_label(x = paces_est$Igualdad2, label = "La primera prioridad de las mujeres debería ser criar hijos")
+paces_est$Igualdad2 <- set_na(paces_est$Igualdad2, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad3 <- set_label(x = paces_est$Igualdad3, label = "Las mujeres deberían permanecer alejadas de la política")
+paces_est$Igualdad3 <- set_na(paces_est$Igualdad3, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad4 <- set_label(x = paces_est$Igualdad4, label = "Cuando no hay muchos trabajos disponibles, los hombres deberían tener más derecho a un trabajo que las mujeres")
+paces_est$Igualdad4 <- set_na(paces_est$Igualdad4, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad5 <- set_label(x = paces_est$Igualdad5, label = "Los hombres y las mujeres deberían recibir el mismo pago cuando hacen los mismos trabajos")
+paces_est$Igualdad5 <- set_na(paces_est$Igualdad5, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad6 <- set_label(x = paces_est$Igualdad6, label = "Los hombres están mejor preparados para ser líderes políticos que las mujeres")
+paces_est$Igualdad6 <- set_na(paces_est$Igualdad6, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad7 <- set_label(x = paces_est$Igualdad7, label = "Los hombres y las mujeres deberían tener los mismos derechos en todos los aspectos")
+paces_est$Igualdad7 <- set_na(paces_est$Igualdad7, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad8 <- set_label(x = paces_est$Igualdad8, label = "El rol más importante de una mujer es cuidar su hogar y cocinar para su familia")
+paces_est$Igualdad8 <- set_na(paces_est$Igualdad8, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Igualdad9 <- set_label(x = paces_est$Igualdad9, label = "Un hombre debe tener la última palabra sobre las decisiones del hogar")
+paces_est$Igualdad9 <- set_na(paces_est$Igualdad9, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+```
+
+## PACES: apoderados
+```{r}
+paces_apod$Igualdad1 <- set_label(x = paces_apod$Igualdad1, label = "Los hombres y las mujeres deberían tener las mismas oportunidades de participar en el gobierno")
+paces_apod$Igualdad1 <- set_na(paces_apod$Igualdad1, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad2 <- set_label(x = paces_apod$Igualdad2, label = "La primera prioridad de las mujeres debería ser criar hijos")
+paces_apod$Igualdad2 <- set_na(paces_apod$Igualdad2, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad3 <- set_label(x = paces_apod$Igualdad3, label = "Las mujeres deberían permanecer alejadas de la política")
+paces_apod$Igualdad3 <- set_na(paces_apod$Igualdad3, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad4 <- set_label(x = paces_apod$Igualdad4, label = "Cuando no hay muchos trabajos disponibles, los hombres deberían tener más derecho a un trabajo que las mujeres")
+paces_apod$Igualdad4 <- set_na(paces_apod$Igualdad4, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad5 <- set_label(x = paces_apod$Igualdad5, label = "Los hombres y las mujeres deberían recibir el mismo pago cuando hacen los mismos trabajos")
+paces_apod$Igualdad5 <- set_na(paces_apod$Igualdad5, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad6 <- set_label(x = paces_apod$Igualdad6, label = "Los hombres están mejor preparados para ser líderes políticos que las mujeres")
+paces_apod$Igualdad6 <- set_na(paces_apod$Igualdad6, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad7 <- set_label(x = paces_apod$Igualdad7, label = "Los hombres y las mujeres deberían tener los mismos derechos en todos los aspectos")
+paces_apod$Igualdad7 <- set_na(paces_apod$Igualdad7, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad8 <- set_label(x = paces_apod$Igualdad8, label = "El rol más importante de una mujer es cuidar su hogar y cocinar para su familia")
+paces_apod$Igualdad8 <- set_na(paces_apod$Igualdad8, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Igualdad9 <- set_label(x = paces_apod$Igualdad9, label = "Un hombre debe tener la última palabra sobre las decisiones del hogar")
+paces_apod$Igualdad9 <- set_na(paces_apod$Igualdad9, na = 9, drop.levels = TRUE, as.tag = FALSE)
+```
+
+#Actitudes hacia la igualdad con inmigrantes
+## PACES: estudiantes
+```{r}
+paces_est$Ig_inm1 <- set_label(x = paces_est$Ig_inm1, label = "Los inmigrantes deberían tener la oportunidad de seguir hablando su idioma")
+paces_est$Ig_inm1 <- set_na(paces_est$Ig_inm1, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm2 <- set_label(x = paces_est$Ig_inm2, label = "Los hijos y las hijas de inmigrantes deberían tener las mismas oportunidades de educación que los otros niños y niñas del país")
+paces_est$Ig_inm2 <- set_na(paces_est$Ig_inm2, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm3 <- set_label(x = paces_est$Ig_inm3, label = "Los inmigrantes que han vivido en un país por varios años deberían poder votar en las elecciones")
+paces_est$Ig_inm3 <- set_na(paces_est$Ig_inm3, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm4 <- set_label(x = paces_est$Ig_inm4, label = "Los inmigrantes deberían tener la oportunidad de continuar con sus costumbres y estilo de vida")
+paces_est$Ig_inm4 <- set_na(paces_est$Ig_inm4, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm5 <- set_label(x = paces_est$Ig_inm5, label = "Los inmigrantes deberían tener los mismos derechos que el resto de los habitantes del país")
+paces_est$Ig_inm5 <- set_na(paces_est$Ig_inm5, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm6 <- set_label(x = paces_est$Ig_inm6, label = "Cuando no hay suficientes trabajos disponibles, se debería restringir la inmigración ")
+paces_est$Ig_inm6 <- set_na(paces_est$Ig_inm6, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm7 <- set_label(x = paces_est$Ig_inm7, label = "Los inmigrantes frecuentemente ocupan los puestos de trabajos de los chilenos")
+paces_est$Ig_inm7 <- set_na(paces_est$Ig_inm7, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$Ig_inm8 <- set_label(x = paces_est$Ig_inm8, label = "Los migrantes tienen costumbres y tradiciones que no se ajustan con la sociedad chilena")
+paces_est$Ig_inm8 <- set_na(paces_est$Ig_inm8, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+```
+
+## PACES: apoderados
+```{r}
+paces_apod$Ig_inm1 <- set_label(x = paces_apod$Ig_inm1, label = "Los inmigrantes deberían tener la oportunidad de seguir hablando su idioma")
+paces_apod$Ig_inm1 <- set_na(paces_apod$Ig_inm1, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm2 <- set_label(x = paces_apod$Ig_inm2, label = "Los hijos y las hijas de inmigrantes deberían tener las mismas oportunidades de educación que los otros niños y niñas del país")
+paces_apod$Ig_inm2 <- set_na(paces_apod$Ig_inm2, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm3 <- set_label(x = paces_apod$Ig_inm3, label = "Los inmigrantes que han vivido en un país por varios años deberían poder votar en las elecciones")
+paces_apod$Ig_inm3 <- set_na(paces_apod$Ig_inm3, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm4 <- set_label(x = paces_apod$Ig_inm4, label = "Los inmigrantes deberían tener la oportunidad de continuar con sus costumbres y estilo de vida")
+paces_apod$Ig_inm4 <- set_na(paces_apod$Ig_inm4, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm5 <- set_label(x = paces_apod$Ig_inm5, label = "Los inmigrantes deberían tener los mismos derechos que el resto de los habitantes del país")
+paces_apod$Ig_inm5 <- set_na(paces_apod$Ig_inm5, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm6 <- set_label(x = paces_apod$Ig_inm6, label = "Cuando no hay suficientes trabajos disponibles, se debería restringir la inmigración")
+paces_apod$Ig_inm6 <- set_na(paces_apod$Ig_inm6, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm7 <- set_label(x = paces_apod$Ig_inm7, label = "Los inmigrantes frecuentemente ocupan los puestos de trabajos de los chilenos")
+paces_apod$Ig_inm7 <- set_na(paces_apod$Ig_inm7, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$Ig_inm8 <- set_label(x = paces_apod$Ig_inm8, label = "Los migrantes tienen costumbres y tradiciones que no se ajustan con la sociedad chilena")
+paces_apod$Ig_inm8 <- set_na(paces_apod$Ig_inm8, na = 9, drop.levels = TRUE, as.tag = FALSE)
+```
+
+#Creencias autoritarias
+## PACES: estudiantes
+```{r}
+paces_est$autorit1 <- set_label(x = paces_est$autorit1, label = "Los jóvenes deben aprender a obedecer y respetar a las autoridades")
+paces_est$autorit1 <- set_na(paces_est$autorit1, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit2 <- set_label(x = paces_est$autorit2, label = "Mientras más personas estén dispuestas a criticar y desafiar a las autoridades es mejor para la sociedad")
+paces_est$autorit2 <- set_na(paces_est$autorit2, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit3 <- set_label(x = paces_est$autorit3, label = "La tolerancia con ideas distintas es uno de los valores más importantes que los jóvenes debieran aprender")
+paces_est$autorit3 <- set_na(paces_est$autorit3, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit4 <- set_label(x = paces_est$autorit4, label = "A veces es mejor que los gobernantes tomen decisiones sin consultar a las mayorías")
+paces_est$autorit4 <- set_na(paces_est$autorit4, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit5 <- set_label(x = paces_est$autorit5, label = "Los gobernantes deben hacer valer su autoridad")
+paces_est$autorit5 <- set_na(paces_est$autorit5, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit6 <- set_label(x = paces_est$autorit6, label = "Los gobernantes pierden autoridad cuando reconocen sus errores")
+paces_est$autorit6 <- set_na(paces_est$autorit6, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit7 <- set_label(x = paces_est$autorit7, label = "La concentración del poder ayuda a mantener el orden")
+paces_est$autorit7 <- set_na(paces_est$autorit7, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit8 <- set_label(x = paces_est$autorit8, label = "Los gobiernos autoritarios se justifican cuando traen orden y seguridad")
+paces_est$autorit8 <- set_na(paces_est$autorit8, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$autorit9 <- set_label(x = paces_est$autorit9, label = "Los gobiernos autoritarios se justifican cuando traen beneficios económicos")
+paces_est$autorit9 <- set_na(paces_est$autorit9, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+```
+## PACES: apoderados
+```{r}
+paces_apod$autorit1 <- set_label(x = paces_apod$autorit1, label = "Los jóvenes deben aprender a obedecer y respetar a las autoridades")
+paces_apod$autorit1 <- set_na(paces_apod$autorit1, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit2 <- set_label(x = paces_apod$autorit2, label = "Mientras más personas estén dispuestas a criticar y desafiar a las autoridades es mejor para la sociedad")
+paces_apod$autorit2 <- set_na(paces_apod$autorit2, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit3 <- set_label(x = paces_apod$autorit3, label = "La tolerancia con ideas distintas es uno de los valores más importantes que los jóvenes debieran aprender")
+paces_apod$autorit3 <- set_na(paces_apod$autorit3, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit4 <- set_label(x = paces_apod$autorit4, label = "A veces es mejor que los gobernantes tomen decisiones sin consultar a las mayorías")
+paces_apod$autorit4 <- set_na(paces_apod$autorit4, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit5 <- set_label(x = paces_apod$autorit5, label = "Los gobernantes deben hacer valer su autoridad")
+paces_apod$autorit5 <- set_na(paces_apod$autorit5, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit6 <- set_label(x = paces_apod$autorit6, label = "Los gobernantes pierden autoridad cuando reconocen sus errores")
+paces_apod$autorit6 <- set_na(paces_apod$autorit6, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit7 <- set_label(x = paces_apod$autorit7, label = "La concentración del poder ayuda a mantener el orden")
+paces_apod$autorit7 <- set_na(paces_apod$autorit7, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit8 <- set_label(x = paces_apod$autorit8, label = "Los gobiernos autoritarios se justifican cuando traen orden y seguridad")
+paces_apod$autorit8 <- set_na(paces_apod$autorit8, na = 9, drop.levels = TRUE, as.tag = FALSE)
+paces_apod$autorit9 <- set_label(x = paces_apod$autorit9, label = "Los gobiernos autoritarios se justifican cuando traen beneficios económicos")
+paces_apod$autorit9 <- set_na(paces_apod$autorit9, na = 9, drop.levels = TRUE, as.tag = FALSE)
+```
+#Confianza en instituciones
+## PACES: estudiantes
+```{r}
+paces_est$conf1 <- set_label(x = paces_est$conf1, label = "El Gobierno de Chile")
+paces_est$conf1 <- set_na(paces_est$conf1, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$conf2 <- set_label(x = paces_est$conf2, label = "Los Tribunales de Justicia")
+paces_est$conf2 <- set_na(paces_est$conf2, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$conf3 <- set_label(x = paces_est$conf3, label = "Los partidos políticos")
+paces_est$conf3 <- set_na(paces_est$conf3, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$conf4 <- set_label(x = paces_est$conf4, label = "El Congreso Nacional")
+paces_est$conf4 <- set_na(paces_est$conf4, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$conf5 <- set_label(x = paces_est$conf5, label = "Los medios de comunicación (televisión, diario, radio)")
+paces_est$conf5 <- set_na(paces_est$conf5, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$conf6 <- set_label(x = paces_est$conf6, label = "Las personas en general")
+paces_est$conf6 <- set_na(paces_est$conf6, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+```
+
+#Corrupción en instituciones
+## PACES: estudiantes
+```{r}
+paces_est$corrup1 <- set_label(x = paces_est$corrup1, label = "El Gobierno de Chile")
+paces_est$corrup1 <- set_na(paces_est$corrup1, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$corrup2 <- set_label(x = paces_est$corrup2, label = "Los Tribunales de Justicia")
+paces_est$corrup2 <- set_na(paces_est$corrup2, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$corrup3 <- set_label(x = paces_est$corrup3, label = "Los partidos políticos")
+paces_est$corrup3 <- set_na(paces_est$corrup3, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$corrup4 <- set_label(x = paces_est$corrup4, label = "El Congreso Nacional")
+paces_est$corrup4 <- set_na(paces_est$corrup4, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+paces_est$corrup5 <- set_label(x = paces_est$corrup5, label = "Los medios de comunicación (televisión, diario, radio)")
+paces_est$corrup5 <- set_na(paces_est$corrup5, na = c(5,9), drop.levels = TRUE, as.tag = FALSE)
+```
+
+# Guardar bases de datos
+```{r}
+save(paces_est, file = "../input/data-proc/paces_est.rda")
+save(paces_apod, file = "../input/data-proc/paces_apod.rda")
+save(iccs2016, file = "../input/data-proc/iccs2016.rda")
+```
+
